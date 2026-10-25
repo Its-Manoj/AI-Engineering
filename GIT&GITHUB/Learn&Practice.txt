@@ -1,0 +1,759 @@
+==========================================================================
+ GIT PRACTICE WORKBOOK
+ Hands-on labs based on the Git Cheat Sheet
+==========================================================================
+
+HOW TO USE THIS FILE
+--------------------
+* Work through the labs in order. Each lab builds on the previous one.
+* Type every command yourself. Do not copy-paste blindly.
+* After each command, read the output and compare it with "EXPECT".
+* Every lab ends with a CHECK. If your result is different, re-read the
+  steps before moving on.
+* Do everything inside the practice folder created in Lab 0. Nothing here
+  touches your real projects.
+* Lines starting with $ are commands you type (do not type the $).
+* Things in [square brackets] are placeholders you replace.
+
+Notes about the cheat sheet:
+* The cheat sheet shows "git checkout" alone. In real use you give it a
+  branch name:  git checkout [branch-name]
+* To create AND switch in one step:  git checkout -b [branch-name]
+  (newer Git also has:  git switch [branch-name]  and  git switch -c [name])
+* Examples below use the branch name "main". Older setups call it "master".
+  Run "git branch" to see which one you have and substitute accordingly.
+
+
+==========================================================================
+ LAB 0 - SETUP  (cheat sheet section: SETUP)
+==========================================================================
+Goal: tell Git who you are and turn on colours.
+
+STEPS
+ 1. $ git --version
+    EXPECT: something like  git version 2.4x.x
+    (If "command not found", install Git first.)
+
+ 2. $ git config --global user.name "Your Name"
+ 3. $ git config --global user.email "you@example.com"
+ 4. $ git config --global color.ui auto
+
+ 5. Verify:
+    $ git config --global user.name
+    $ git config --global user.email
+    $ git config --global --list
+
+CHECK
+ [ ] Your name and email are printed back correctly.
+ [ ] color.ui=auto appears in the list.
+
+QUESTIONS
+ Q0.1  Why does Git need your name and email?
+ Q0.2  What does --global mean? What would you drop to set it for one
+       repository only?
+
+
+==========================================================================
+ LAB 1 - INIT & CLONE  (SETUP & INIT)
+==========================================================================
+Goal: create a repository and see what Git adds.
+
+STEPS
+ 1. $ mkdir ~/git-practice
+    $ cd ~/git-practice
+    $ mkdir project-a
+    $ cd project-a
+
+ 2. $ git init -b main
+    EXPECT: "Initialized empty Git repository in .../project-a/.git/"
+
+ 3. $ ls -a
+    EXPECT: you can see a hidden .git folder.
+
+ 4. $ git status
+    EXPECT: "On branch main" and "No commits yet".
+
+ 5. $ git log
+    EXPECT: an error saying there are no commits yet. That is normal.
+
+CHECK
+ [ ] .git folder exists.
+ [ ] git status works.
+
+QUESTIONS
+ Q1.1  What is stored in .git?
+ Q1.2  What happens if you delete the .git folder?
+ Q1.3  What is the difference between "git init" and "git clone [url]"?
+       (You will practise clone in Lab 8.)
+
+
+==========================================================================
+ LAB 2 - STAGE & SNAPSHOT  (STAGE & SNAPSHOT)
+==========================================================================
+Goal: understand working directory vs staging area vs commit.
+
+STEPS (inside ~/git-practice/project-a)
+ 1. Create two files:
+    $ echo "Hello Git" > hello.txt
+    $ echo "Notes v1" > notes.txt
+
+ 2. $ git status
+    EXPECT: both files listed under "Untracked files" (red).
+
+ 3. Stage only hello.txt:
+    $ git add hello.txt
+    $ git status
+    EXPECT: hello.txt under "Changes to be committed" (green),
+            notes.txt still untracked.
+
+ 4. Unstage it:
+    $ git reset hello.txt
+    $ git status
+    EXPECT: hello.txt is untracked again. File content is untouched.
+    $ cat hello.txt        (still says "Hello Git")
+
+ 5. Stage both and commit:
+    $ git add hello.txt notes.txt
+    $ git commit -m "Add hello and notes files"
+    EXPECT: "2 files changed, 2 insertions(+)"
+
+ 6. Make a change but do NOT stage it:
+    $ echo "second line" >> hello.txt
+    $ git diff
+    EXPECT: shows "+second line".
+    $ git diff --staged
+    EXPECT: no output (nothing staged).
+
+ 7. Stage it and compare again:
+    $ git add hello.txt
+    $ git diff
+    EXPECT: no output now.
+    $ git diff --staged
+    EXPECT: shows "+second line".
+
+ 8. Commit:
+    $ git commit -m "Add second line to hello.txt"
+
+ 9. $ git log
+    EXPECT: two commits, newest first.
+
+CHECK
+ [ ] You can explain why "git diff" was empty in step 7.
+ [ ] "git status" says "nothing to commit, working tree clean".
+
+QUESTIONS
+ Q2.1  Three areas: working directory, staging area, repository.
+       Which command moves changes from the 1st to the 2nd? From the 2nd
+       to the 3rd?
+ Q2.2  Does "git reset [file]" delete your edits? Explain.
+ Q2.3  Why is a descriptive commit message important?
+
+MINI-CHALLENGE
+ Edit notes.txt AND hello.txt. Commit ONLY notes.txt with a good message.
+ Then commit hello.txt separately. You should see two new commits.
+
+
+==========================================================================
+ LAB 3 - BRANCH & MERGE  (BRANCH & MERGE)
+==========================================================================
+Goal: isolate work in a branch, then merge it back.
+
+STEPS
+ 1. $ git branch
+    EXPECT: "* main"  (the * marks the active branch)
+
+ 2. Create a branch (does not switch to it):
+    $ git branch feature-login
+    $ git branch
+    EXPECT: feature-login listed, but * is still next to main.
+
+ 3. Switch:
+    $ git checkout feature-login
+    $ git branch
+    EXPECT: * is now next to feature-login.
+
+ 4. Do work on the branch:
+    $ echo "login page" > login.txt
+    $ git add login.txt
+    $ git commit -m "Add login page"
+
+ 5. Go back to main and look around:
+    $ git checkout main
+    $ ls
+    EXPECT: login.txt is NOT there. It lives only on feature-login.
+
+ 6. Merge:
+    $ git merge feature-login
+    EXPECT: "Fast-forward" (main had no new commits of its own).
+    $ ls
+    EXPECT: login.txt is now present.
+
+ 7. $ git log
+    EXPECT: "Add login page" is in main's history.
+
+ 8. Clean up:
+    $ git branch -d feature-login
+
+CHECK
+ [ ] login.txt exists on main after the merge.
+
+--- PART B: A REAL MERGE (two branches both changed) ---
+ 1. $ git checkout -b feature-a
+    $ echo "A work" > a.txt
+    $ git add a.txt
+    $ git commit -m "Add a.txt"
+
+ 2. $ git checkout main
+    $ echo "B work" > b.txt
+    $ git add b.txt
+    $ git commit -m "Add b.txt"
+
+ 3. $ git merge feature-a
+    EXPECT: Git opens an editor for a merge commit message
+            ("Merge branch 'feature-a'"). Save and close it.
+
+ 4. $ git log --oneline --graph
+    EXPECT: a graph showing the branches joining.
+
+--- PART C: A MERGE CONFLICT (on purpose) ---
+ 1. $ echo "line from main" > conflict.txt
+    $ git add conflict.txt
+    $ git commit -m "Add conflict.txt on main"
+
+ 2. $ git checkout -b feature-c
+    $ echo "line from feature-c" > conflict.txt
+    $ git commit -am "Change conflict.txt on feature-c"
+
+ 3. $ git checkout main
+    $ echo "different line from main" > conflict.txt
+    $ git commit -am "Change conflict.txt on main"
+
+ 4. $ git merge feature-c
+    EXPECT: "CONFLICT (content): Merge conflict in conflict.txt"
+
+ 5. $ git status
+    EXPECT: "both modified: conflict.txt"
+
+ 6. Open conflict.txt. You will see:
+        <<<<<<< HEAD
+        different line from main
+        =======
+        line from feature-c
+        >>>>>>> feature-c
+    Edit the file so it contains only the final text you want, for
+    example:  "combined line"   (delete all 3 marker lines).
+
+ 7. $ git add conflict.txt
+    $ git commit
+    (accept the default merge message)
+
+ 8. $ git log --oneline --graph
+
+CHECK
+ [ ] No <<<<<<< markers remain in conflict.txt.
+ [ ] git status is clean.
+
+QUESTIONS
+ Q3.1  What does "git branch [name]" do vs "git checkout [name]"?
+ Q3.2  What is a fast-forward merge?
+ Q3.3  Why did the conflict happen? What did Git need from you?
+ Q3.4  If you are on main and run "git merge feature-x", which branch
+       changes?
+
+
+==========================================================================
+ LAB 4 - INSPECT & COMPARE  (INSPECT & COMPARE)
+==========================================================================
+Goal: read history and differences between branches.
+
+SETUP: create two diverging branches
+ $ git checkout -b branchA
+ $ echo "only on A" > onlyA.txt
+ $ git add onlyA.txt
+ $ git commit -m "A: add onlyA.txt"
+ $ git checkout main
+ $ git checkout -b branchB
+ $ echo "only on B" > onlyB.txt
+ $ git add onlyB.txt
+ $ git commit -m "B: add onlyB.txt"
+
+STEPS
+ 1. $ git log
+    $ git log --oneline
+    (Press q to leave the pager.)
+
+ 2. Commits on branchA that are not on branchB:
+    $ git log branchB..branchA
+    EXPECT: only "A: add onlyA.txt".
+
+ 3. Reverse it:
+    $ git log branchA..branchB
+    EXPECT: only "B: add onlyB.txt".
+
+ 4. Diff of what is in branchA that is not in branchB:
+    $ git diff branchB...branchA
+    EXPECT: shows onlyA.txt being added (three dots!).
+
+ 5. Show one commit:
+    $ git log --oneline
+    $ git show [SHA]       (use any short hash from the list)
+    EXPECT: author, date, message and the diff for that commit.
+
+ 6. Follow a file's history:
+    $ git log --follow hello.txt
+    EXPECT: the commits that touched hello.txt.
+
+CHECK
+ [ ] You can state the difference between "..".. and "..." in your own
+     words. (Two dots on log = commits; three dots on diff = changes on
+     the right side since the common ancestor.)
+
+QUESTIONS
+ Q4.1  What does "git show [SHA]" display?
+ Q4.2  Why is --follow useful after a rename? (Do Lab 5 and return.)
+
+
+==========================================================================
+ LAB 5 - TRACKING PATH CHANGES  (TRACKING PATH CHANGES)
+==========================================================================
+Goal: delete and rename files in a way Git tracks.
+
+STEPS
+ 1. $ git checkout main
+    $ echo "temp" > temp.txt
+    $ git add temp.txt
+    $ git commit -m "Add temp.txt"
+
+ 2. Delete it with Git:
+    $ git rm temp.txt
+    $ git status
+    EXPECT: "deleted: temp.txt" under Changes to be committed.
+    $ git commit -m "Remove temp.txt"
+
+ 3. Rename/move:
+    $ git mv notes.txt docs-notes.txt
+    $ git status
+    EXPECT: "renamed: notes.txt -> docs-notes.txt" (already staged).
+    $ git commit -m "Rename notes.txt to docs-notes.txt"
+
+ 4. See renames in history:
+    $ git log --stat -M
+    EXPECT: the rename commit shows "notes.txt => docs-notes.txt".
+
+ 5. Follow across the rename:
+    $ git log --follow docs-notes.txt
+    EXPECT: history from BEFORE the rename also appears.
+
+CHECK
+ [ ] "git status" is clean after each commit.
+
+QUESTIONS
+ Q5.1  What is the difference between "rm temp.txt" (shell) and
+       "git rm temp.txt"?
+ Q5.2  What does -M do in "git log --stat -M"?
+
+MINI-CHALLENGE
+ Rename hello.txt to greeting.txt using only your file manager or "mv"
+ (not git mv). Run "git status". What does Git show? Then run
+ "git add -A" and "git status" again. What changed?
+
+
+==========================================================================
+ LAB 6 - TEMPORARY COMMITS / STASH  (TEMPORARY COMMITS)
+==========================================================================
+Goal: shelve unfinished work to switch branches safely.
+
+STEPS
+ 1. $ git checkout main
+    $ echo "work in progress" >> hello.txt
+    $ git status
+    EXPECT: hello.txt modified.
+
+ 2. Save it away:
+    $ git stash
+    EXPECT: "Saved working directory and index state ..."
+    $ git status
+    EXPECT: clean. hello.txt is back to its committed text.
+
+ 3. Do something urgent on another branch:
+    $ git checkout branchA
+    $ git checkout main
+
+ 4. Make a second stash:
+    $ echo "another change" >> docs-notes.txt
+    $ git stash
+
+ 5. List the stack:
+    $ git stash list
+    EXPECT: stash@{0} (newest) and stash@{1}.
+
+ 6. Restore the newest:
+    $ git stash pop
+    EXPECT: docs-notes.txt modified again; stash@{0} removed from list.
+
+ 7. Throw away the remaining one:
+    $ git stash list
+    $ git stash drop
+    EXPECT: "Dropped refs/stash@{0}".
+    $ git stash list
+    EXPECT: empty.
+
+ 8. Reset the file:
+    $ git checkout -- docs-notes.txt     (or:  git restore docs-notes.txt)
+
+CHECK
+ [ ] git stash list is empty at the end.
+ [ ] git status is clean.
+
+QUESTIONS
+ Q6.1  Why would Git refuse to switch branches when you have changes?
+ Q6.2  "pop" vs "drop": what is the difference?
+ Q6.3  Does git stash save untracked files by default? (Try it, then look
+       up "git stash -u".)
+
+
+==========================================================================
+ LAB 7 - IGNORING PATTERNS  (IGNORING PATTERNS)
+==========================================================================
+Goal: keep junk out of the repository.
+
+STEPS
+ 1. Create files and folders:
+    $ mkdir logs
+    $ echo "debug" > logs/app.log
+    $ echo "my todo" > ideas.notes
+    $ mkdir build-output
+    $ echo "x" > build-output/out.bin
+    $ git status
+    EXPECT: all of them appear as untracked.
+
+ 2. Create .gitignore:
+    $ printf "logs/\n*.notes\nbuild*/\n" > .gitignore
+    $ cat .gitignore
+
+ 3. $ git status
+    EXPECT: only .gitignore is untracked. logs/, ideas.notes and
+            build-output/ have disappeared from the list.
+
+ 4. $ git add .gitignore
+    $ git commit -m "Add .gitignore"
+
+ 5. Test a specific file:
+    $ git check-ignore -v ideas.notes
+    EXPECT: prints which rule matched.
+
+ 6. Global ignore file (cheat sheet: core.excludesfile):
+    $ echo ".DS_Store" > ~/.gitignore_global
+    $ git config --global core.excludesfile ~/.gitignore_global
+    $ git config --global core.excludesfile
+    EXPECT: prints the path.
+
+CHECK
+ [ ] Ignored files never show in git status.
+
+QUESTIONS
+ Q7.1  What does a trailing slash in "logs/" mean?
+ Q7.2  What does "*.notes" match?
+ Q7.3  Difference between .gitignore in a repo and core.excludesfile?
+ Q7.4  If a file is ALREADY committed, will adding it to .gitignore remove
+       it from the repo? (Look up: git rm --cached [file].)
+
+
+==========================================================================
+ LAB 8 - SHARE & UPDATE  (SHARE & UPDATE, plus clone)
+==========================================================================
+Goal: practise remotes with no internet using a local "server" folder.
+
+SETUP: make a fake remote
+ $ cd ~/git-practice
+ $ git init --bare -b main remote.git
+
+STEPS
+ 1. Connect project-a to it:
+    $ cd project-a
+    $ git remote add origin ~/git-practice/remote.git
+    $ git remote -v
+    EXPECT: origin listed for fetch and push.
+
+ 2. Send your branch:
+    $ git push origin main
+    EXPECT: "* [new branch] main -> main"
+    (Tip: "git push -u origin main" also sets main to track origin/main
+     so later you can just run "git push" and "git pull".)
+
+ 3. Clone it as a second person:
+    $ cd ~/git-practice
+    $ git clone ~/git-practice/remote.git project-b
+    $ cd project-b
+    $ git log --oneline
+    EXPECT: same history as project-a.
+
+ 4. As "person B", make a change and push:
+    $ git config user.name "Person B"        (local to this repo only)
+    $ git config user.email "b@example.com"
+    $ echo "from B" > fromB.txt
+    $ git add fromB.txt
+    $ git commit -m "B: add fromB.txt"
+    $ git push origin main
+
+ 5. Back as "person A":
+    $ cd ~/git-practice/project-a
+    $ git fetch origin
+    EXPECT: it downloads new commits but does NOT change your files.
+    $ ls            (fromB.txt is not there yet)
+    $ git log origin/main --oneline     (you can see B's commit)
+
+ 6. Bring it in, option 1 - merge:
+    $ git merge origin/main
+    EXPECT: fast-forward. fromB.txt is now present.
+
+ 7. Repeat with pull:
+    - In project-b: create fromB2.txt, commit, push.
+    - In project-a:
+      $ git pull
+      EXPECT: fetch + merge in one step.
+
+CHECK
+ [ ] project-a and project-b show the same git log --oneline.
+
+QUESTIONS
+ Q8.1  What is an "alias" (like origin) for a remote?
+ Q8.2  fetch vs pull: what is the difference?
+ Q8.3  Why is fetch considered "safe"?
+ Q8.4  What happens if you push when the remote has commits you do not
+       have? (Try it: commit in both repos, push from B first, then push
+       from A. Read the error. Fix with: git pull, then git push.)
+
+
+==========================================================================
+ LAB 9 - REWRITE HISTORY  (REWRITE HISTORY)   *** DANGEROUS COMMANDS ***
+==========================================================================
+Goal: use rebase and reset --hard safely, in a sandbox only.
+RULE: Never rewrite history that others have already pulled.
+
+--- PART A: REBASE ---
+SETUP
+ $ cd ~/git-practice
+ $ mkdir rebase-lab && cd rebase-lab
+ $ git init -b main
+ $ echo "1" > f.txt && git add f.txt && git commit -m "C1"
+ $ git checkout -b feature
+ $ echo "feat" > feat.txt && git add feat.txt && git commit -m "F1"
+ $ git checkout main
+ $ echo "2" >> f.txt && git commit -am "C2"
+ $ git log --oneline --graph --all
+ EXPECT: history forks (main has C2, feature has F1).
+
+STEPS
+ 1. $ git checkout feature
+ 2. $ git rebase main
+    EXPECT: "Successfully rebased and updated refs/heads/feature."
+ 3. $ git log --oneline --graph --all
+    EXPECT: a straight line: C1 -> C2 -> F1. F1 has a NEW hash.
+ 4. $ git checkout main
+    $ git merge feature
+    EXPECT: fast-forward, no merge commit.
+
+QUESTIONS
+ Q9.1  Merge vs rebase: how does the history graph differ?
+ Q9.2  Why does the commit hash of F1 change after the rebase?
+ Q9.3  Why should you never rebase commits that are already pushed and
+       shared?
+
+--- PART B: RESET --HARD ---
+SETUP
+ $ echo "keep" > keep.txt && git add keep.txt && git commit -m "Good commit"
+ $ echo "oops" > oops.txt  && git add oops.txt && git commit -m "Bad commit"
+ $ echo "scratch" >> f.txt          (an uncommitted edit)
+ $ git log --oneline
+
+STEPS
+ 1. Copy the hash of "Good commit".
+ 2. $ git reset --hard [that-hash]
+    EXPECT: "HEAD is now at [hash] Good commit".
+ 3. $ git log --oneline        ("Bad commit" is gone from history)
+ 4. $ ls                       (oops.txt is gone)
+ 5. $ cat f.txt                (the "scratch" edit is gone too!)
+
+ 6. RECOVERY: commits are not deleted instantly.
+    $ git reflog
+    EXPECT: a list including the "Bad commit" hash.
+    $ git reset --hard [bad-commit-hash]
+    EXPECT: oops.txt returns.
+    (Uncommitted edits like "scratch", however, are NOT recoverable.)
+
+CHECK
+ [ ] You recovered the bad commit using reflog.
+
+QUESTIONS
+ Q9.4  What three things does reset --hard change? (HEAD/branch pointer,
+       staging area, working directory)
+ Q9.5  Why is it dangerous with uncommitted work?
+ Q9.6  Compare:  git reset [file]   vs   git reset --hard [commit]
+
+
+==========================================================================
+ FINAL CHALLENGES  (combine everything)
+==========================================================================
+Start each in a fresh folder with "git init -b main".
+
+CHALLENGE 1 - "Feature workflow"
+ 1. Commit README.md on main.
+ 2. Create branch feature-search. Add search.py in two separate commits.
+ 3. While there, you get an urgent bug: stash your half-done edit, switch
+    to main, fix typo in README.md, commit, switch back, pop the stash.
+ 4. Merge feature-search into main.
+ 5. Show only the commits on main that are not on feature-search before
+    the merge (git log feature-search..main).
+ SUCCESS: graph shows both lines of work; stash list empty.
+
+CHALLENGE 2 - "Clean repository"
+ 1. Add files: app.py, debug.log, secrets.notes, tmp/cache.bin.
+ 2. Write .gitignore so only app.py and .gitignore get committed.
+ 3. Verify with git status and git check-ignore -v.
+ SUCCESS: one commit containing exactly 2 files.
+
+CHALLENGE 3 - "Two-person collaboration"
+ 1. Create a bare remote and two clones (alice, bob).
+ 2. Alice pushes a commit. Bob pulls it.
+ 3. Both edit the SAME line of the same file, Alice pushes first.
+ 4. Bob tries to push, gets rejected, pulls, resolves the conflict,
+    commits, pushes.
+ SUCCESS: both clones show identical history.
+
+CHALLENGE 4 - "Time travel"
+ 1. Make 5 commits, each adding one line to log.txt.
+ 2. Use git show [SHA] on each to see what changed.
+ 3. Reset --hard to commit 3, then use reflog to return to commit 5.
+ SUCCESS: log.txt has 5 lines at the end.
+
+CHALLENGE 5 - "Rename detective"
+ 1. Create report.txt with a few lines, commit.
+ 2. git mv report.txt reports/final-report.txt, commit.
+ 3. Edit the file slightly, commit.
+ 4. Prove with git log --follow and git log --stat -M that Git
+    understands it is the same file.
+
+
+==========================================================================
+ QUIZ  (answers below - try without looking)
+==========================================================================
+ 1.  Which command shows changes that are staged but not committed?
+ 2.  Which command unstages a file but keeps your edits?
+ 3.  What does "git checkout [branch]" do?
+ 4.  What does a "*" next to a branch in "git branch" mean?
+ 5.  Which command downloads remote changes WITHOUT merging them?
+ 6.  Which command downloads AND merges?
+ 7.  What does "git stash pop" do?
+ 8.  Which command deletes a file and stages the deletion?
+ 9.  Which command shows commits in branchA that are not in branchB?
+10.  What goes in .gitignore to ignore every file ending in .notes?
+11.  Which file/command sets the global ignore file?
+12.  Which command applies your branch's commits on top of another
+     branch's tip?
+13.  Which command makes a new commit snapshot from staged content?
+14.  What does "git remote add origin [url]" do?
+15.  What does "git config --global color.ui auto" do?
+
+--------------------------------------------------------------------------
+ QUIZ ANSWERS
+--------------------------------------------------------------------------
+ 1.  git diff --staged
+ 2.  git reset [file]
+ 3.  Switches to that branch and updates your working directory.
+ 4.  It marks the currently active branch.
+ 5.  git fetch [alias]
+ 6.  git pull
+ 7.  Re-applies the most recent stash to your working directory and
+     removes it from the stash stack.
+ 8.  git rm [file]
+ 9.  git log branchB..branchA
+10.  *.notes
+11.  git config --global core.excludesfile [file]
+12.  git rebase [branch]
+13.  git commit -m "[message]"
+14.  Saves the URL under the short name "origin" so you can fetch/push
+     to it.
+15.  Turns on automatic coloured output for easier reading.
+
+--------------------------------------------------------------------------
+ LAB QUESTION ANSWERS (short)
+--------------------------------------------------------------------------
+ Q0.1  Every commit records an author; it is how history credits people.
+ Q0.2  --global applies to all repos for your user. Drop --global (run
+       inside a repo) to set it for that repo only.
+ Q1.1  The entire history, branches, config and objects of the repo.
+ Q1.2  The folder becomes a normal folder; all history is lost.
+ Q1.3  init starts a new empty repo; clone copies an existing one,
+       including its full history, from a URL.
+ Q2.1  git add (working -> staging); git commit (staging -> repository).
+ Q2.2  No. It only removes the file from the staging area.
+ Q2.3  Future you and teammates read the log to understand why.
+ Q3.1  branch creates; checkout switches (use checkout -b to do both).
+ Q3.2  When the target branch has no new commits, Git just moves the
+       pointer forward; no merge commit is created.
+ Q3.3  Both branches changed the same lines. Git needs you to choose or
+       combine the final text.
+ Q3.4  The current branch (main).
+ Q4.1  Commit metadata (author, date, message) plus its changes.
+ Q4.2  It lists history that was recorded under the file's older names.
+ Q5.1  Plain rm only deletes in the working directory; git rm also stages
+       the deletion.
+ Q5.2  Detects renamed files so the log shows a move instead of a delete
+       plus an add.
+ Q6.1  To avoid overwriting your uncommitted work.
+ Q6.2  pop applies the stash then removes it; drop removes it without
+       applying.
+ Q6.3  No; untracked files need -u.
+ Q7.1  It matches a directory.
+ Q7.2  Any file whose name ends in .notes.
+ Q7.3  .gitignore is shared with the repo; excludesfile is personal and
+       applies to all your repos.
+ Q7.4  No. Use git rm --cached [file] and commit.
+ Q8.1  A short name for a remote URL.
+ Q8.2  fetch only downloads; pull = fetch + merge.
+ Q8.3  It never changes your working files or branches.
+ Q8.4  Rejected. Pull (merge) the remote changes, then push again.
+ Q9.1  Merge keeps both lines and adds a merge commit; rebase gives a
+       straight line.
+ Q9.2  A commit hash depends on its parent; a new parent means a new hash.
+ Q9.3  Others hold the old commits; rewriting them causes diverged,
+       confusing history.
+ Q9.4  Branch pointer, staging area, working directory.
+ Q9.5  Uncommitted edits are overwritten and cannot be recovered.
+ Q9.6  reset [file] only unstages; reset --hard [commit] rewrites
+       everything to match that commit.
+
+
+==========================================================================
+ QUICK REFERENCE (from the cheat sheet)
+==========================================================================
+ SETUP            git config --global user.name "[name]"
+                  git config --global user.email "[email]"
+                  git config --global color.ui auto
+ INIT / CLONE     git init            git clone [url]
+ STAGE            git status          git add [file]
+                  git reset [file]    git diff
+                  git diff --staged   git commit -m "[msg]"
+ BRANCH / MERGE   git branch          git branch [name]
+                  git checkout [name] git merge [branch]
+                  git log
+ SHARE            git remote add [alias] [url]   git fetch [alias]
+                  git merge [alias]/[branch]     git push [alias] [branch]
+                  git pull
+ PATH CHANGES     git rm [file]       git mv [old] [new]
+                  git log --stat -M
+ STASH            git stash           git stash list
+                  git stash pop       git stash drop
+ REWRITE          git rebase [branch] git reset --hard [commit]
+ INSPECT          git log branchB..branchA   git log --follow [file]
+                  git diff branchB...branchA git show [SHA]
+ IGNORE           git config --global core.excludesfile [file]
+                  .gitignore patterns:  logs/   *.notes   pattern*/
+
+ CLEAN UP WHEN FINISHED:
+   $ rm -rf ~/git-practice
+
+==========================================================================
+ END OF WORKBOOK
+==========================================================================
