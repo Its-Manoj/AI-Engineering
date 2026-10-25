@@ -8,4 +8,4 @@ Desktop.ini
 .vscode/
 
 # virtual Environments
-venv/
+.venv/
