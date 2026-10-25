@@ -6,3 +6,6 @@ Desktop.ini
 
 # vs code 
 .vscode/
+
+# virtual Environments
+venv/
